@@ -1,0 +1,45 @@
+# -----------------------------------------------------------------------------
+# GITHUB ACTIONS CI PIPELINE
+# -----------------------------------------------------------------------------
+# This workflow automates the testing of our Python API.
+
+name: Python CI
+
+# 1. EVENTS (When should this run?)
+# We trigger the pipeline on pushes to 'main' and on any Pull Request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 2. JOBS (What should be done?)
+jobs:
+  test-python-api:
+    # RUNNER: The virtual machine environment provided by GitHub.
+    runs-on: ubuntu-latest
+
+    # DEFAULTS: Set the working directory for all 'run' commands in this job.
+    defaults:
+      run:
+        working-directory: apps/hello-api-python
+
+    # 3. STEPS (The sequential tasks)
+    steps:
+      # Action: Downloads the code from the repository into the runner.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Action: Installs the specified Python version on the runner.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Shell Command: Install the required libraries.
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Shell Command: Execute the test suite. If pytest fails (returns exit code > 0),
+      # the entire workflow is marked as Failed.
+      - name: Run tests
+        run: pytest

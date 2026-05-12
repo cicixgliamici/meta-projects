@@ -1,0 +1,45 @@
+# -----------------------------------------------------------------------------
+# GITLAB CI/CD PIPELINE (EXAMPLE)
+# -----------------------------------------------------------------------------
+# Compare this file with .github/workflows/ci-python.yml.
+# GitLab CI relies on executing everything inside Docker containers.
+
+# DEFAULT IMAGE: Every job will run inside this container unless specified otherwise.
+image: python:3.12-slim
+
+# STAGES: Define the order of execution. Jobs in 'test' run before jobs in 'build'.
+stages:
+  - test
+  - build
+
+# VARIABLES: Global environment variables available to all jobs.
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# CACHE: Speed up pipeline by keeping downloaded packages between runs.
+cache:
+  paths:
+    - .cache/pip
+
+# JOB 1: Test the API
+test_api:
+  stage: test
+  script:
+    - cd apps/hello-api-python
+    - pip install -r requirements.txt
+    - pytest
+
+# JOB 2: Build the Docker Image
+build_docker_image:
+  stage: build
+  # OVERRIDE IMAGE: We need the Docker CLI to build images, so we use a different container.
+  image: docker:24.0.5
+  # SERVICES: Docker-in-Docker (dind) daemon required to build images inside a CI container.
+  services:
+    - docker:24.0.5-dind
+  script:
+    - cd apps/hello-api-python
+    - docker build -t hello-api-python:latest .
+  # ONLY: This job will only execute if the commit is on the 'main' branch.
+  only:
+    - main

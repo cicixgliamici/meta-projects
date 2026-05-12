@@ -1,0 +1,13 @@
+# Build and runtime
+__pycache__/
+*.pyc
+.env
+
+# Ignored Local Documents
+LOCAL_ROADMAP.md
+LOCAL_HISTORY.md
+
+# Virtual environments
+.venv/
+venv/
+env/

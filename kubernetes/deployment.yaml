@@ -1,0 +1,47 @@
+# -----------------------------------------------------------------------------
+# KUBERNETES DEPLOYMENT MANIFEST
+# -----------------------------------------------------------------------------
+# A Deployment manages a set of identical Pods (replicas). It ensures that
+# the specified number of Pods are running at all times and handles rolling updates.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # The name of the deployment itself
+  name: hello-api-python
+  labels:
+    app: hello-api
+spec:
+  # REPLICAS: How many identical copies of the pod should be running?
+  replicas: 2
+  
+  # SELECTOR: How does the Deployment know which Pods it owns?
+  # It looks for Pods matching these labels.
+  selector:
+    matchLabels:
+      app: hello-api
+      
+  # TEMPLATE: This is the blueprint for creating the Pods.
+  template:
+    metadata:
+      # These labels must match the selector above!
+      labels:
+        app: hello-api
+    spec:
+      containers:
+      - name: hello-api-python
+        image: hello-api-python:latest
+        imagePullPolicy: IfNotPresent # Don't pull if image exists locally (useful for Minikube)
+        
+        # PORTS: The port the container is listening on internally.
+        ports:
+        - containerPort: 5000
+        
+        # LIVENESS PROBE: How K8s knows if the app is frozen or dead.
+        # If this HTTP request fails, K8s will automatically restart the container.
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5  # Wait 5s before checking (allows app to boot)
+          periodSeconds: 10       # Check every 10 seconds thereafter

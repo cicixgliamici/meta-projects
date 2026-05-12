@@ -1,0 +1,25 @@
+# -----------------------------------------------------------------------------
+# KUBERNETES SERVICE MANIFEST
+# -----------------------------------------------------------------------------
+# A Service provides a stable IP address and DNS name to a group of Pods.
+# Since Pod IPs change every time a Pod is recreated, you should always route
+# traffic through a Service.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-api-service
+spec:
+  # TYPE: NodePort exposes the Service on each Node's IP at a static port.
+  # This makes the service accessible from outside the cluster.
+  type: NodePort
+  
+  # SELECTOR: This is how the Service finds the Pods to route traffic to.
+  # It looks for all Pods with the label 'app: hello-api'.
+  selector:
+    app: hello-api
+    
+  ports:
+    - port: 80           # The port exposed by the Service internally
+      targetPort: 5000   # The port the container is actually listening on
+      nodePort: 30080    # The external port opened on the worker node (must be 30000-32767)

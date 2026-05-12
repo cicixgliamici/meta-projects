@@ -1,0 +1,31 @@
+# -----------------------------------------------------------------------------
+# DOCKER COMPOSE CONFIGURATION
+# -----------------------------------------------------------------------------
+# Docker Compose is a tool for defining and running multi-container Docker apps.
+# It replaces long `docker run` commands with a single declarative YAML file.
+
+version: '3.8'
+
+services:
+  # 'api' is the name of our service. In a multi-container setup (e.g., with a DB),
+  # this name acts as the DNS hostname. The DB could reach this container at 'http://api:5000'
+  api:
+    
+    # BUILD: Instructs compose to build the image from the Dockerfile in the specified folder.
+    build:
+      context: ./apps/hello-api-python
+      
+    # PORTS: Maps ports [HOST_PORT]:[CONTAINER_PORT].
+    # Allows you to access the app via http://localhost:5000 on your machine.
+    ports:
+      - "5000:5000"
+      
+    # ENVIRONMENT: Injects environment variables into the running container.
+    environment:
+      - FLASK_ENV=development
+      
+    # VOLUMES: Maps a directory on the host to a directory in the container.
+    # Here, we map the source code. If you edit a .py file on your local machine,
+    # the change is immediately reflected inside the container without rebuilding!
+    volumes:
+      - ./apps/hello-api-python:/app
