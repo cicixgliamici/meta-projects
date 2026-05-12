@@ -1,22 +1,43 @@
-from app import app
+# Commits, Branches, and Merges
 
+A practical guide for team collaboration with Git.
 
-def test_home_endpoint_returns_ok_message():
-    """The home endpoint should return a JSON response with status ok."""
-    client = app.test_client()
+## 1) Commits
 
-    response = client.get("/")
+Best practices:
 
-    assert response.status_code == 200
-    assert response.get_json()["status"] == "ok"
+- One commit = one logical change.
+- Write clear commit messages.
+- Avoid "WIP" commits on shared branches.
 
+Examples:
 
-def test_health_endpoint_returns_healthy_status():
-    """The health endpoint should expose a basic service health check."""
-    client = app.test_client()
+```text
+Add health endpoint
+Fix /health test response
+Update README with setup steps
+```
 
-    response = client.get("/health")
+## 2) Branches
 
-    assert response.status_code == 200
-    assert response.get_json()["service"] == "hello-api-python"
-    assert response.get_json()["status"] == "healthy"
+Suggested naming pattern:
+
+- `main`: stable production-ready branch
+- `feature/<name>`: new features
+- `fix/<name>`: bug fixes
+- `docs/<name>`: documentation updates
+
+## 3) Merges
+
+Recommended approach:
+
+1. Open small PRs that are easy to review.
+2. Ensure CI checks pass before merging.
+3. Merge only after review approval.
+
+## 4) Pre-merge checklist
+
+- [ ] `git status` is clean
+- [ ] local tests pass
+- [ ] PR description is updated
+- [ ] no unresolved conflicts
