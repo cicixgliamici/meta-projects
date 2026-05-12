@@ -1,39 +1,8 @@
-# Roadmap
+# Software Delivery Lab
 
-## MVP 0 — Git, GitHub and CI
+**From Git commits to production-like delivery.**
 
-Status: current version.
-
-Goals:
-
-- explain the big picture of software delivery
-- introduce Git fundamentals
-- introduce GitHub/GitLab collaboration models
-- provide a minimal Python API
-- add unit tests
-- add a GitHub Actions CI pipeline
-
-Deliverables:
-
-- `docs/00_big_picture`
-- `docs/01_git`
-- `docs/02_github_gitlab`
-- `apps/hello-api-python`
-- `.github/workflows/ci-python.yml`
-
----
-
-## MVP 1 — Docker
-
-Goals:
-
-- explain containers
-- add a Dockerfile for the Python API
-- build the image locally
-- run the application inside a container
-- add a Docker build workflow
-
-Planned files:
+This repository is an educational lab about the practical lifecycle of software:
 
 ```text
 docs/04_docker/
