@@ -1,2 +1,17 @@
 Flask==3.0.3
 pytest==8.2.0
+
+# --- Development & CI/CD Dependencies ---
+# These tools are essential for maintaining code quality, 
+# security, and formatting in professional environments.
+
+# 1. Formatting & Linting
+black==24.4.2       # The uncompromising Python code formatter
+ruff==0.4.4         # An extremely fast Python linter, written in Rust
+yamllint==1.35.1    # A linter for YAML files (used for GitHub Actions)
+
+# 2. Security (SAST)
+bandit==1.7.8       # A tool designed to find common security issues in Python code
+
+# 3. Testing & Coverage
+pytest-cov==5.0.0   # Pytest plugin to measure test coverage

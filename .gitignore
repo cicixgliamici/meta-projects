@@ -3,11 +3,13 @@ __pycache__/
 *.pyc
 .env
 
-# Ignored Local Documents
-LOCAL_ROADMAP.md
-LOCAL_HISTORY.md
+# Ignored Local Development Context
+.dev_context/
 
 # Virtual environments
 .venv/
 venv/
 env/
+
+# Testing
+.pytest_cache/

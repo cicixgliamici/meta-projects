@@ -2,6 +2,12 @@
 # GITHUB ACTIONS CI PIPELINE
 # -----------------------------------------------------------------------------
 # This workflow automates the testing of our Python API.
+# It acts as a "Gatekeeper", preventing bad code from being merged into the 'main' branch.
+#
+# EDUCATIONAL NOTE:
+# A professional pipeline doesn't just run unit tests. It validates the code formatting,
+# scans for known security vulnerabilities (SAST), checks if the YAML files are valid,
+# and verifies the code works across multiple versions of the language.
 
 name: Python CI
 
@@ -14,32 +20,113 @@ on:
 
 # 2. JOBS (What should be done?)
 jobs:
-  test-python-api:
-    # RUNNER: The virtual machine environment provided by GitHub.
+  
+  # ---------------------------------------------------------------------------
+  # JOB 1: LINTING & FORMATTING
+  # Ensures the code is readable, consistent, and follows standards.
+  # ---------------------------------------------------------------------------
+  linting:
+    name: Code Quality & Linting
     runs-on: ubuntu-latest
-
-    # DEFAULTS: Set the working directory for all 'run' commands in this job.
-    defaults:
-      run:
-        working-directory: apps/hello-api-python
-
-    # 3. STEPS (The sequential tasks)
     steps:
-      # Action: Downloads the code from the repository into the runner.
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Action: Installs the specified Python version on the runner.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # Shell Command: Install the required libraries.
+      - name: Install Linting Tools
+        working-directory: apps/hello-api-python
+        run: pip install black ruff yamllint
+
+      - name: Check Python Code Formatting (Black)
+        working-directory: apps/hello-api-python
+        run: black --check .
+
+      - name: Run Python Linter (Ruff)
+        working-directory: apps/hello-api-python
+        run: ruff check .
+
+      - name: Lint YAML files (yamllint)
+        # We run this from the root to check docker-compose.yml, workflows, etc.
+        run: yamllint . -d "{extends: relaxed, rules: {line-length: {max: 120}}}"
+
+
+  # ---------------------------------------------------------------------------
+  # JOB 2: SECURITY SCANNING (SAST)
+  # Analyzes the source code for common vulnerabilities.
+  # ---------------------------------------------------------------------------
+  security:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Bandit (SAST)
+        working-directory: apps/hello-api-python
+        run: pip install bandit
+
+      - name: Run Bandit Security Scan
+        working-directory: apps/hello-api-python
+        # The -r flag means recursive. It scans the current directory and subdirectories.
+        run: bandit -r .
+        
+      # Using Trivy to scan the filesystem for vulnerabilities (e.g. vulnerable OS packages in Dockerfile)
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+
+  # ---------------------------------------------------------------------------
+  # JOB 3: UNIT TESTS & COVERAGE
+  # Executes tests across multiple Python versions (Matrix Build).
+  # ---------------------------------------------------------------------------
+  test:
+    name: Unit Tests (Python ${{ matrix.python-version }})
+    # This job 'needs' the linting and security jobs to pass before it starts.
+    # If they fail, this job is skipped.
+    needs: [linting, security]
+    runs-on: ubuntu-latest
+    
+    # MATRIX STRATEGY:
+    # GitHub Actions will spin up 3 separate runners simultaneously,
+    # one for each version of Python listed here.
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    defaults:
+      run:
+        working-directory: apps/hello-api-python
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          # Caching dependencies speeds up subsequent pipeline runs
+          cache: 'pip' 
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Shell Command: Execute the test suite. If pytest fails (returns exit code > 0),
-      # the entire workflow is marked as Failed.
-      - name: Run tests
-        run: pytest
+      - name: Run tests with Coverage
+        # We enforce a strict 80% minimum coverage. If tests don't cover enough code, the build fails.
+        run: pytest --cov=. --cov-report=term-missing --cov-fail-under=80

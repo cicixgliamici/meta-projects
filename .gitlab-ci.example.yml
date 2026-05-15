@@ -2,13 +2,21 @@
 # GITLAB CI/CD PIPELINE (EXAMPLE)
 # -----------------------------------------------------------------------------
 # Compare this file with .github/workflows/ci-python.yml.
-# GitLab CI relies on executing everything inside Docker containers.
+# While GitHub Actions uses "Runners" that can directly execute shell commands
+# on the host VM, GitLab CI defaults to executing everything inside Docker containers.
+# 
+# EDUCATIONAL NOTE:
+# This pipeline mirrors our GitHub Actions setup. It demonstrates how to achieve
+# the exact same "Gatekeeper" checks (Linting, Security, Testing) using a different
+# CI/CD orchestrator.
 
 # DEFAULT IMAGE: Every job will run inside this container unless specified otherwise.
 image: python:3.12-slim
 
-# STAGES: Define the order of execution. Jobs in 'test' run before jobs in 'build'.
+# STAGES: Define the order of execution. Jobs in the same stage run in parallel.
+# If any job in 'lint_and_security' fails, the 'test' stage is never executed.
 stages:
+  - lint_and_security
   - test
   - build
 
@@ -21,15 +29,54 @@ cache:
   paths:
     - .cache/pip
 
-# JOB 1: Test the API
+
+# -----------------------------------------------------------------------------
+# STAGE 1: LINTING & FORMATTING
+# -----------------------------------------------------------------------------
+lint_code:
+  stage: lint_and_security
+  script:
+    - cd apps/hello-api-python
+    - pip install black ruff yamllint
+    - black --check .
+    - ruff check .
+    - cd ../..
+    - yamllint . -d "{extends: relaxed, rules: {line-length: {max: 120}}}"
+
+
+# -----------------------------------------------------------------------------
+# STAGE 1 (Parallel): SECURITY SCANNING (SAST)
+# -----------------------------------------------------------------------------
+security_scan:
+  stage: lint_and_security
+  script:
+    - cd apps/hello-api-python
+    - pip install bandit
+    - bandit -r .
+  # Note: To replicate Trivy filesystem scanning in GitLab, you would typically 
+  # use GitLab's built-in Container Scanning templates or run a dedicated Trivy container.
+
+
+# -----------------------------------------------------------------------------
+# STAGE 2: UNIT TESTS & COVERAGE
+# -----------------------------------------------------------------------------
 test_api:
   stage: test
+  # In GitLab, you can achieve Matrix Builds using the 'parallel: matrix' keyword
+  parallel:
+    matrix:
+      - PYTHON_VERSION: ["3.10", "3.11", "3.12"]
+  # Override the default image to use the specific Python version from the matrix
+  image: python:${PYTHON_VERSION}-slim
   script:
     - cd apps/hello-api-python
     - pip install -r requirements.txt
-    - pytest
+    - pytest --cov=. --cov-report=term-missing --cov-fail-under=80
 
-# JOB 2: Build the Docker Image
+
+# -----------------------------------------------------------------------------
+# STAGE 3: BUILD
+# -----------------------------------------------------------------------------
 build_docker_image:
   stage: build
   # OVERRIDE IMAGE: We need the Docker CLI to build images, so we use a different container.
